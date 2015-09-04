@@ -1,0 +1,544 @@
+# Damon LaPoint
+# DSC 450 Team 3
+# Part 2 of Kaggle Cap Stone project on Handwriting
+
+setwd("~/Personal/School/Data Science 450 Summer 2015/Cap Stone")
+data <- read.csv("train.csv")
+test <- read.csv("test.csv")
+
+
+######################################
+#move the data label column to the end for Weka and for ease of using test set.
+labels <- data$label
+data <- data[,2:ncol(data)]
+
+########################################
+# determine column and row for each pixel
+pos <- 1
+
+rc.matrics <- data.frame()
+for(pos in 1:784)
+{
+  x <- c()
+  # assign row and columns
+  if ((pos + 1) %% 28 == 0)
+    { r <- floor((pos + 1) / 28) 
+      c <- 28
+    }
+    else 
+    { r <- floor((pos + 1) / 28) + 1
+      c <- (pos + 1) %% 28
+    }  
+  x <- c( pos, r, c )
+  #print(x)
+  rc.matrics <- rbind(rc.matrics, x )
+}
+
+names(rc.matrics) <- c('data_column_num', 'row_num', 'col_num')
+
+
+################################
+## loop to calculate row values using base 2 for 8 pixels for the first set of rows (left half)
+#################################
+
+r <- 4 # starting row and moving 3 each loop
+n <- c("data.row") # keep track of names to add as column names later
+c <- 7:14 # the column numbers to include in each
+i <- 0
+data.rows <- data.frame(seq(1:nrow(data)))
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num == r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('row', r, 'l', sep = ""))
+  r <- r + 1
+}
+
+######################
+# second half of rows (right half)
+######################
+
+r <- 4 # starting row and moving 3 each loop
+c <- 15:23 # the column numbers to include in each
+i <- 0
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num == r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('row', r, 'r', sep = ""))
+  r <- r + 1
+}
+
+####################
+# first set of columns (top half)
+####################
+
+r <- c(3,5,6,8,9,11,12,14) # top rows that weren't part of row pixels
+c <- 4 # top left column starting point
+i <- 0
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num %in% r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('col', c, 't', sep = ""))
+  c <- c + 1
+}
+
+####################
+# second set of columns (bottom half)
+####################
+
+r <- c(15,17,18,20,21,23,24,26) # top rows that weren't part of row pixels
+c <- 4 # top left column starting point
+i <- 0
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num %in% r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('col', c, 'b', sep = ""))
+  c <- c + 1
+}
+
+
+###########################3
+### diagonal right & up, right side
+r <- 11
+c <- 15
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc +1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'r', sep = ""))
+  r <- r + 1
+}
+
+###################################
+### right side - left and up
+r <- 11
+c <- 22
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc -1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'r', sep = ""))
+  r <- r + 1
+}
+
+###################################
+
+### right & up, left side
+r <- 11
+c <- 7
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc +1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'l', sep = ""))
+  r <- r + 1
+}
+###################################
+### left & up, left side
+r <- 11
+c <- 14
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc -1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'l', sep = ""))
+  r <- r + 1
+}
+
+###################################
+
+### right & up, middle
+r <- 11
+c <- 11
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc +1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'M', sep = ""))
+  r <- r + 1
+}
+###################################
+### left & up, middl
+r <- 11
+c <- 18
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc -1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows <- cbind(data.rows, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'M', sep = ""))
+  r <- r + 1
+}
+###################################
+
+#add column names
+names(data.rows) <- n
+#add label column at end:
+data.rows$label <- labels
+
+#####################################
+#create a test data set to evaluate using equal distribution of lables
+
+#samples <- 4200
+#data.test <- data.frame()
+
+#set.seed(50)
+#for(i in 0:9)
+#{
+#  data.sub <- subset(data.rows, label == i)
+#  data.test <- rbind(data.test, data.sub[sample( 1:nrow(data.sub),round(samples * nrow(data.rows[which(data.rows$label == i),]) / nrow(data.rows)),replace = FALSE),])
+#}
+
+# remove test rows from training set
+#test.rows <- row.names(data.test)
+#data.train <- data.rows[!rownames(data.rows) %in% test.rows,]
+
+data.train <- data.rows #comment out when doing hold out test
+data.train$label <- labels
+
+################################
+#  Build model with training set
+#################################
+library(randomForest)
+
+#Final - 0.9642857 based on 10% hold out, top 102 features based on information gain from Weka
+
+rfit<-randomForest( as.factor(label) ~ diag20x22r + diag18x18M + diag17x18M + diag19x22r + diag21x11M + diag18x22r + diag19x18M + diag16x18M + diag20x11M + diag22x11M + diag21x22r + diag20x18M + diag17x22r + diag19x11M + diag15x18M + diag23x11M + diag21x18M + diag19x15r + diag18x15r + diag17x15r + diag18x11M + diag16x22r + diag20x15r + col11b + diag22x18M + diag13x22r + diag12x22r + diag22x22r + diag23x18M + diag16x15r + diag24x18M + diag14x22r + diag24x11M + diag17x11M + diag13x11M + diag15x22r + diag21x15r + diag11x22r + diag21x7l + diag14x11M + diag14x18M + diag25x18M + diag15x15r + diag16x11M + diag22x7l + diag15x11M + diag14x15r + diag20x7l + diag23x7l + diag12x11M + diag23x22r + diag24x7l + diag25x7l + diag25x11M + diag13x15r + diag18x14l + diag19x14l + diag17x14l + diag22x15r + diag19x7l + diag11x11M + diag20x14l + diag13x18M + col10b + diag11x15r + diag16x14l + diag12x15r + diag15x14l + diag25x15r + row6r + diag14x14l + diag21x14l + diag24x22r + diag24x14l + row11r + diag23x15r + diag24x15r + diag23x14l + row10r + diag13x14l + diag18x7l + diag22x14l + row7r + diag25x14l + diag12x18M + row9r + diag25x22r + diag11x18M + col11t + diag12x14l + diag17x7l + row8r + row11l + col9b + diag11x14l + row5r + diag16x7l + col10t + row10l + diag13x7l + diag14x7l + diag15x7l, data=data.train,  ntree=200)
+
+varImpPlot(rfit)
+
+#########################
+## test against hold out
+#########################
+#prediction <- predict(rfit, data.test)
+#mean(prediction == data.test$label)
+#prediction.confusion <- table(prediction, data.test$label)
+
+
+#########################
+# apply prediction to test data set
+#########################
+
+data <- test
+################################
+## loop to calculate row values using base 2 for 8 pixels for the first set of rows (left half)
+#################################
+
+r <- 4 # starting row and moving 3 each loop
+n <- c("data.row") # keep track of names to add as column names later
+c <- 7:14 # the column numbers to include in each
+i <- 0
+data.rows.test <- data.frame(seq(1:nrow(data)))
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num == r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('row', r, 'l', sep = ""))
+  r <- r + 1
+}
+
+######################
+# second half of rows (right half)
+######################
+
+r <- 4 # starting row and moving 3 each loop
+c <- 15:23 # the column numbers to include in each
+i <- 0
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num == r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('row', r, 'r', sep = ""))
+  r <- r + 1
+}
+
+####################
+# first set of columns (top half)
+####################
+
+r <- c(3,5,6,8,9,11,12,14) # top rows that weren't part of row pixels
+c <- 4 # top left column starting point
+i <- 0
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num %in% r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('col', c, 't', sep = ""))
+  c <- c + 1
+}
+
+####################
+# second set of columns (bottom half)
+####################
+
+r <- c(15,17,18,20,21,23,24,26) # top rows that weren't part of row pixels
+c <- 4 # top left column starting point
+i <- 0
+for(i in 1:8)
+{
+  pixels <- rc.matrics[which(rc.matrics$row_num %in% r & rc.matrics$col_num %in% c),1]
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('col', c, 'b', sep = ""))
+  c <- c + 1
+}
+
+
+###########################3
+### diagonal right & up, right side
+r <- 11
+c <- 15
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc +1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'r', sep = ""))
+  r <- r + 1
+}
+
+###################################
+### right side - left and up
+r <- 11
+c <- 22
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc -1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'r', sep = ""))
+  r <- r + 1
+}
+
+###################################
+
+### right & up, left side
+r <- 11
+c <- 7
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc +1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'l', sep = ""))
+  r <- r + 1
+}
+###################################
+### left & up, left side
+r <- 11
+c <- 14
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc -1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'l', sep = ""))
+  r <- r + 1
+}
+
+###################################
+
+### right & up, middle
+r <- 11
+c <- 11
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc +1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'M', sep = ""))
+  r <- r + 1
+}
+###################################
+### left & up, middl
+r <- 11
+c <- 18
+i <- 1
+l <- 1
+
+for(i in 1:15)
+{
+  pixels <- c()
+  rr <- r
+  cc <- c
+  for(l in 1:8)
+  {
+    
+    p <- rc.matrics[which(rc.matrics$row_num %in% rr & rc.matrics$col_num %in% cc),1]
+    pixels <- c(pixels, p)
+    rr <- rr -1
+    cc <- cc -1
+  }
+  row.a <- 2^7*as.numeric(data[,pixels[1]]>0) + 2^6*as.numeric(data[,pixels[2]]>0) + 2^5*as.numeric(data[,pixels[3]]>0) + 2^4*as.numeric(data[,pixels[4]]>0) + 2^3*as.numeric(data[,pixels[5]]>0) + 2^2*as.numeric(data[,pixels[6]]>0) + 2^1*as.numeric(data[,pixels[7]]>0) + 2^0*as.numeric(data[,pixels[8]]>0)
+  data.rows.test <- cbind(data.rows.test, row.a)
+  n <- c(n, paste('diag', r, 'x',c, 'M', sep = ""))
+  r <- r + 1
+}
+###################################
+
+#add column names
+names(data.rows.test) <- n
+
+
+prediction.test <- predict(rfit, data.rows.test)
+
+#names(prediction.test) <- c('ImageId', 'Label')
+write.csv(prediction.test, file="prediction.test.csv")
