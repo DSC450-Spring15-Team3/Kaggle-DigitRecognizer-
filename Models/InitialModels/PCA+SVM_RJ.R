@@ -18,7 +18,7 @@ fullTrain <- read_csv("..\\..\\data\\train.csv")
 totalRows <- nrow(fullTrain) # or use some other smaller value for testing purposes
 
 # Split to Training and Testing Sets on known outcomes
-set.seed(0)
+set.seed(1)
 trainRows <- sample(1:totalRows, 35000)
 testRows <- setdiff(1:totalRows, trainRows)
 
@@ -29,21 +29,17 @@ myTest = fullTrain[testRows, ]
 labels = as.factor(myTrain[,1])
 pca <- prcomp(myTrain[, -1], scale=FALSE)
 #summary(pca)
-
 #percentVariance <- pca$sdev^2/sum(pca$sdev^2)
-#sum(percentVariance[1:100]) # 91.5%
-#sum(percentVariance[1:150]) # 94.9%
-#sum(percentVariance[1:200]) # 96.7%
-#sum(percentVariance[1:350]) # 99.2%
 
 #for (featureCount in seq(25, 150, 5))
 #{
 
-  # 55 Gage slightly higher accuracy on linear kernel, but sticking with 50 due to simplicity.
-  featureCount <- 50 #  0.979
+# 50 features give best overall results.
+  featureCount <- 50
   
+# Train an SVM model with the given set of features
   model <- svm(pca$x[,1:featureCount], 
-               labels, kernel = "radial", probability=TRUE, gamma=.03, cost=.1);
+               labels, kernel = "radial", probability=FALSE, gamma=0.03, cost=10);
   
   
   # Test model on test data
@@ -62,22 +58,24 @@ pca <- prcomp(myTrain[, -1], scale=FALSE)
 ##########################################
 
 # For Kaggle prediction, train on the full set  
-  labels = as.factor(fullTrain[,1])
+  labels <- as.factor(fullTrain[,1])
   pca <- prcomp(fullTrain[, -1], scale=FALSE)
-  featureCount <- 50 #  0.979
+  featureCount <- 50 
   model <- svm(pca$x[,1:featureCount], 
-               labels, kernel = "radial", probability=TRUE, gamma=.030, c=10);
+               labels, kernel = "radial", probability=FALSE, gamma=.03, cost=10);
   
 # Generate predictions on the Kaggle Set
 
 test = read_csv("..\\..\\data\\test.csv")
 
+# Run PCA on the test data, then use features to predict based on model
 test.pca <- predict(pca, newdata = test)
 test.predict <- predict(model, newdata = test.pca[, 1:featureCount])
 
+# Build the prediection data frame, and save to disk
 predictions=data.frame(ImageId=1:nrow(test), Label=levels(labels)[test.predict])
+write_csv(predictions,"predictions_svm_rj.csv")
 
-head(predictions)
-write_csv(predictions,"predictions.csv")
+#head(predictions)
 
 
