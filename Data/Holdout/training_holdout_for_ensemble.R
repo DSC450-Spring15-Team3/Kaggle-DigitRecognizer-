@@ -28,5 +28,5 @@ table(data.test$label)
 table(data.train$label)
 
 #output new training set and holdout for ensemble testing
-write.csv(data.test, "data_holdout_test.csv")
-write.csv(data.train, "data_train_minus_holdout.csv")
+write.csv(data.test, "data_holdout_test.csv", row.names = FALSE)
+write.csv(data.train, "data_train_minus_holdout.csv", row.names = FALSE)
