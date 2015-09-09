@@ -78,4 +78,21 @@ write_csv(predictions,"predictions_svm_rj.csv")
 
 #head(predictions)
 
+##########################################
 
+# For Ensemble prediction, train
+
+train <- read_csv("..\\..\\data\\\\Holdout\\data_train_minus_holdout.csv")
+test <- read_csv("..\\..\\data\\Holdout\\data_holdout_test.csv")
+
+labels <- as.factor(train[,2])
+pca <- prcomp(train[, 3:786], scale=FALSE)
+featureCount <- 50 
+model <- svm(pca$x[,1:featureCount], 
+             labels, kernel = "radial", probability=FALSE, gamma=.03, cost=10);
+test.pca <- predict(pca, newdata = test)
+test.predict <- predict(model, newdata = test.pca[, 1:featureCount])
+
+# Build the prediection data frame, and save to disk
+predictions=data.frame(ImageId=1:nrow(test), Label=levels(labels)[test.predict])
+write_csv(predictions,"..\\..\\data\\\\Holdout\\ensemble_predictions_svm_rj.csv")
